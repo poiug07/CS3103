@@ -10,13 +10,12 @@
 
 int K;
 
-char *time_string(time_t t, char* s) {
+void time_string(time_t t, char* s) {
     // sample testcase
     // input: 1645491600
     // output: Tue Feb 22 09:00:00 2022
     struct tm *tm = localtime(&t);
     strftime(s, 25, "%c", tm);
-    return s;
 }
 
 int main(int argc, char **argv)
