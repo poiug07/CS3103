@@ -2,6 +2,12 @@
 # You should customize this list as applicable to your project.
 # Learn more about .gitignore:
 #     https://www.atlassian.com/git/tutorials/saving-changes/gitignore
+case1/
+case2/
+case3/
+case4/
+case5/
+*.o
 
 # Node artifact files
 node_modules/
