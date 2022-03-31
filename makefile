@@ -24,3 +24,10 @@ test:
 
 clean :
 	-rm -f *.out *.o
+
+getdata:
+	unzip -j /public/cs3103/project/project.zip "project_log_analyze/case1/*" -d "case1/"
+	unzip -j /public/cs3103/project/project.zip "project_log_analyze/case2/*" -d "case2/"
+	unzip -j /public/cs3103/project/project.zip "project_log_analyze/case3/*" -d "case3/"
+	unzip -j /public/cs3103/project/project.zip "project_log_analyze/case4/*" -d "case4/"
+	unzip -j /public/cs3103/project/project.zip "project_log_analyze/case5/*" -d "case5/"
