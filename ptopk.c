@@ -7,8 +7,6 @@
 #include <errno.h>
 #include <pthread.h>
 
-// the dictator
-
 int K;
 
 int main(int argc, char **argv)
