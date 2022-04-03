@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pthread.h>
+#include <time.h>
 
 #define COUNTER_SIZE 9400
 
@@ -43,6 +44,14 @@ void processfile(char *filename, int *global_counter) {
     fclose(input);
 }
 
+
+void time_string(time_t t, char* s) {
+    // sample testcase
+    // input: 1645491600
+    // output: Tue Feb 22 09:00:00 2022
+    struct tm *tm = localtime(&t);
+    strftime(s, 25, "%c", tm);
+}
 
 int main(int argc, char **argv)
 {
