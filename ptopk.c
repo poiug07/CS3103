@@ -12,17 +12,18 @@
 
 int K;
 int counter[COUNTER_SIZE];
-char dirname[50];  // To store directory
+char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
 
 void processfile(char *filename, int *global_counter) {
+    // malloc is slow, should init once and use it many times. Size is fixed.
     int *localcounter = (int*)malloc(9400*sizeof(int));
     memset(localcounter,0 ,COUNTER_SIZE*sizeof(int));
     // printf("%s\n", filename);
     FILE* input = fopen(filename,"r");
 
 	if(!input){
-	    printf("err:%d\n",errno);
+	    printf("process file->err:%d\n",errno);
 	    exit(errno);
 	} 
     int buffer_size=40;
@@ -39,7 +40,6 @@ void processfile(char *filename, int *global_counter) {
     for(int i=0; i!=COUNTER_SIZE; ++i) {
         global_counter[i] += localcounter[i];
     }
-
     free(localcounter);
     fclose(input);
 }
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
     DIR *d;
     struct dirent *dir;
-    char temp[40];
+    char temp[60];
     temp[0] = '\0';
     d = opendir(dirname);
     if (d)
@@ -82,15 +82,23 @@ int main(int argc, char **argv)
             strcat(temp, dirname);
             strcat(temp, dir->d_name);
             processfile(temp, counter);
+            temp[0] = '\0';
         }
         closedir(d);
     }
 
-    printf("%d %d %d\n", counter[0], counter[1000], counter[2012]);
     // Do top K here.
     
 
+    // Assume here I have array of indices with top values.
+    int topK[5] = {1, 2, 3, 4, 5};
     // Do output here.
+    for(int i=0; i<K; i++) {
+        // Can do printing faster
+        // https://stackoverflow.com/questions/5975378/fastest-way-to-print-a-certain-number-of-characters-to-stdout-in-c
+        time_string((time_t)start_timestamp+topK[i]*3600, temp);
+        printf("%s\t\t%d\n", temp, counter[topK[i]]);
+    }
 
     return 0;
 }
