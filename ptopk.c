@@ -15,6 +15,70 @@ int counter[COUNTER_SIZE];
 char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
 
+int compare_value_and_time(int *values, int t1, int t2)
+{
+    // Returns negative if value of values on t1 is smaller than t2
+    // if values same, returns negative value if t1 smaller than t2
+    if (values[t1] != values[t2])
+        return values[t1] - values[t2];
+    else
+        return t1 - t2;
+}
+
+void swap(int *a, int *b) {
+        int temp = *a;
+        *a = *b;
+        *b = temp;
+}
+
+void heapify(int* heap, int* counter, int i) {
+        // K - global variable defining size of heap
+        int largest = i;
+        int l = 2*i+1;
+        int r = 2*i+2;
+        if(l<K && compare_value_and_time(counter, heap[l], heap[largest]) < 0)
+                largest = l;
+        if(r<K && compare_value_and_time(counter, heap[r], heap[largest]) < 0)
+                largest = r;
+        if(largest!=i){
+                swap(&heap[i], &heap[largest]);
+                heapify(heap, counter, largest);
+        }
+}
+
+void buildHeap(int *heap, int *counter) {
+    // Calling Heapify for all non leaf nodes
+    // K - global variable denoting size of heap
+    for (int i = K / 2 - 1; i >= 0; i--) {
+        heapify(heap, counter, i);
+    }
+}
+
+int cmpfunc(const void * a, const void * b) {
+    // requires global counter value to be set
+   return  -compare_value_and_time(counter, *(int*)a, *(int*)b);
+}
+
+void TopK(int *counter, int *heap)
+{
+        // K - global variable denoting size of heap
+        for(int i=0; i<K; i++) {
+                heap[i] = i;
+        }
+        buildHeap(heap, counter);
+        for(int i=K; i<COUNTER_SIZE; i++) {
+                if(compare_value_and_time(counter, heap[0], i)<0){
+                        heap[0] = i;
+                        heapify(heap, counter, 0);
+                }
+        }
+
+        // this should put values in descending order
+        // I think it is just faster to use qsort,
+        // but maybe wrong. TODO: Need to check.
+        qsort(heap, K, sizeof(int), cmpfunc);
+}
+
 void processfile(char *filename, int *global_counter) {
     // malloc is slow, should init once and use it many times. Size is fixed.
     int *localcounter = (int*)malloc(9400*sizeof(int));
@@ -88,16 +152,19 @@ int main(int argc, char **argv)
     }
 
     // Do top K here.
-    
+    int topK[K];
+    TopK(counter, topK);
 
-    // Assume here I have array of indices with top values.
-    int topK[5] = {1, 2, 3, 4, 5};
+    // // Assume here I have array of indices with top values.
+    // int topK[5] = {1, 2, 3, 4, 5};
+
     // Do output here.
+    printf("Top K frequently accessed hour:\n");
     for(int i=0; i<K; i++) {
         // Can do printing faster
         // https://stackoverflow.com/questions/5975378/fastest-way-to-print-a-certain-number-of-characters-to-stdout-in-c
         time_string((time_t)start_timestamp+topK[i]*3600, temp);
-        printf("%s\t\t%d\n", temp, counter[topK[i]]);
+        printf("%s\t%d\n", temp, counter[topK[i]]);
     }
 
     return 0;
