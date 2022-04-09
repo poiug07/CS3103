@@ -9,18 +9,19 @@
 #include <stdio.h>
 #include <math.h>
 
-#define COUNTER_SIZE 9400
-#define TNUM 16
+#define COUNTER_SIZE 9323
+#define TNUM 4
 
 int K;
 int counter[COUNTER_SIZE];
-pthread_mutex_t counter_lock;
+// pthread_mutex_t counter_lock;
 char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
 
 struct thread_args {
     char** filenames;
     int * counter;
+    int filecount;
     int start;
     int end;
 };
@@ -99,7 +100,7 @@ void TopK(int *counter, int *heap)
         qsort(heap, K, sizeof(int), cmpfunc);
 }
 
-void processfile(char *filename, int *localcounter) {
+void processfile(char *filename, int *counter) {
     // printf("%s\n", filename);
     FILE* input = fopen(filename,"r");
 
@@ -114,7 +115,7 @@ void processfile(char *filename, int *localcounter) {
 	while(fgets(buffer,buffer_size,input)!=NULL){
 		char* temp;
 		long time_stamp = strtol(buffer,&temp,10);
-		localcounter[(time_stamp-start_timestamp)/3600]++;
+		counter[(time_stamp-start_timestamp)/3600]++;
 	}
 
     // pthread_mutex_lock(&counter_lock);
@@ -136,7 +137,6 @@ void* processfiles(void* arg) {
         // printf("%s\n", filenames[i]);
         FILE* input = fopen(filenames[i] ,"r");
         if(!input){
-            printf("%d", i);
             printf("process files->err:%d\n",errno);
             exit(errno);
         } 
@@ -150,6 +150,12 @@ void* processfiles(void* arg) {
         }
         fclose(input);
     }
+
+    // pthread_mutex_lock(&counter_lock);
+    // for(int idx=0; idx<COUNTER_SIZE; idx++)
+    //     counter[idx] += localcounter[idx];
+    // pthread_mutex_unlock(&counter_lock);
+
     return 0;
 }
 
@@ -161,15 +167,17 @@ void startThreads(int file_count, char **filenames) {
     int i=0;
     int start = 0;
     for(; i<TNUM; i++){
+        // printf("%d here\n", i);
         localcounters[i] = (int*)malloc(9400*sizeof(int));
         memset(localcounters[i], 0, COUNTER_SIZE*sizeof(int));
         arglist[i].filenames = filenames;
         arglist[i].start = start;
         arglist[i].end = start + blocksize;
         arglist[i].counter = localcounters[i];
+        arglist[i].filecount = file_count;
         start += blocksize;
     }
-    arglist[i].end = file_count;
+    arglist[TNUM - 1].end = file_count;
 
     for(i=0; i<TNUM; i++){
         pthread_create(&threads[i], NULL, &processfiles, &arglist[i]);
@@ -185,6 +193,12 @@ void startThreads(int file_count, char **filenames) {
 
 int main(int argc, char **argv)
 {
+    // Sleep function to artificially slown down program
+    // struct timespec ts;
+    // ts.tv_sec = 150 / 1000;
+    // ts.tv_nsec = (150 % 1000) * 1000000;
+    // nanosleep(&ts, NULL);
+
     strcpy(dirname, argv[1]);
     start_timestamp = atol(argv[2]);
     K = atoi(argv[3]);
@@ -196,9 +210,6 @@ int main(int argc, char **argv)
 
     DIR *d;
     struct dirent *dir;
-    char temp[50];
-    temp[0] = '\0';
-
     d = opendir(dirname);
     // Count the number of files
     int file_count = 0;
@@ -244,6 +255,7 @@ int main(int argc, char **argv)
     TopK(counter, topK);
 
     // Do output here.
+    char temp[40];
     printf("Top K frequently accessed hour:\n");
     for(int i=0; i<K; i++) {
         // Can do printing faster
