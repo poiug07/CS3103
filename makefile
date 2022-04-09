@@ -33,6 +33,13 @@ getdata:
 	unzip -j /public/cs3103/project/project.zip "project_log_analyze/case4/*" -d "case4/"
 	unzip -j /public/cs3103/project/project.zip "project_log_analyze/case5/*" -d "case5/"
 
+run:
+	./test.o case1/ 1645491600 5
+	./test.o case2/ 1645491600 5
+	./test.o case3/ 1645491600 5
+	./test.o case4/ 1645491600 5
+	./test.o case5/ 1645491600 5
+
 testdiff:
 	@./test.o case1/ 1645491600 5 >> myoutput
 	@./test.o case2/ 1645491600 5 >> myoutput
