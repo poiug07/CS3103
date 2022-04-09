@@ -104,7 +104,7 @@ void parse_block(int *localcounter, char* buffer, char* tail,int block_size, cha
 
     char *temp;
     value_string[val_po] = '\0';
-    time_stamp = strtol(value_string+val_po-10,&temp,10);
+    time_stamp = atol(value_string+val_po-10);
 	localcounter[(time_stamp-start_timestamp)/3600]++;
 	val_po=0;
 	parsed_posi++;
@@ -115,8 +115,7 @@ void parse_block(int *localcounter, char* buffer, char* tail,int block_size, cha
 		if (current==','){
 		    // former part is the target_value
             buffer[parsed_posi]='\0';
-            // time_stamp = atol(buffer+parsed_posi-10);
-            time_stamp = strtol(buffer+parsed_posi-10, &temp,10);
+            time_stamp = atol(buffer+parsed_posi-10);
             localcounter[(time_stamp-start_timestamp)/3600]++;
             value_string[0] = '\0';
 		}
