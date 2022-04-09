@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -7,13 +6,34 @@
 #include <errno.h>
 #include <pthread.h>
 #include <time.h>
+#include <stdio.h>
+#include <math.h>
 
 #define COUNTER_SIZE 9400
+#define TNUM 16
 
 int K;
 int counter[COUNTER_SIZE];
+pthread_mutex_t counter_lock;
 char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
+
+struct thread_args {
+    char** filenames;
+    int * counter;
+    int start;
+    int end;
+};
+
+typedef struct thread_args ThreadArgs;
+
+void time_string(time_t t, char* s) {
+    // sample testcase
+    // input: 1645491600
+    // output: Tue Feb 22 09:00:00 2022
+    struct tm *tm = localtime(&t);
+    strftime(s, 25, "%c", tm);
+}
 
 int compare_value_and_time(int *values, int t1, int t2)
 {
@@ -79,10 +99,7 @@ void TopK(int *counter, int *heap)
         qsort(heap, K, sizeof(int), cmpfunc);
 }
 
-void processfile(char *filename, int *global_counter) {
-    // malloc is slow, should init once and use it many times. Size is fixed.
-    int *localcounter = (int*)malloc(9400*sizeof(int));
-    memset(localcounter,0 ,COUNTER_SIZE*sizeof(int));
+void processfile(char *filename, int *localcounter) {
     // printf("%s\n", filename);
     FILE* input = fopen(filename,"r");
 
@@ -93,7 +110,6 @@ void processfile(char *filename, int *global_counter) {
     int buffer_size=40;
 	char buffer[buffer_size+1];
 
-	int i=0;
 	int line=0;
 	while(fgets(buffer,buffer_size,input)!=NULL){
 		char* temp;
@@ -101,20 +117,70 @@ void processfile(char *filename, int *global_counter) {
 		localcounter[(time_stamp-start_timestamp)/3600]++;
 	}
 
-    for(int i=0; i!=COUNTER_SIZE; ++i) {
-        global_counter[i] += localcounter[i];
-    }
-    free(localcounter);
+    // pthread_mutex_lock(&counter_lock);
+    // for(int i=0; i!=COUNTER_SIZE; ++i) {
+    //     global_counter[i] += localcounter[i];
+    // }
+    // pthread_mutex_unlock(&counter_lock);
+    // free(localcounter);
     fclose(input);
 }
 
+void* processfiles(void* arg) {
+    ThreadArgs *args = (ThreadArgs*)arg;
+    int *localcounter = args->counter;
+    int start = args->start;
+    int end = args->end;
+    char **filenames = args->filenames;
+    for(int i=start; i<end; i++){
+        // printf("%s\n", filenames[i]);
+        FILE* input = fopen(filenames[i] ,"r");
+        if(!input){
+            printf("%d", i);
+            printf("process files->err:%d\n",errno);
+            exit(errno);
+        } 
+        int buffer_size=40;
+        char buffer[buffer_size+1];
+        int line=0;
+        while(fgets(buffer,buffer_size,input)!=NULL){
+            char* temp;
+            long time_stamp = strtol(buffer,&temp,10);
+            localcounter[(time_stamp-start_timestamp)/3600]++;
+        }
+        fclose(input);
+    }
+    return 0;
+}
 
-void time_string(time_t t, char* s) {
-    // sample testcase
-    // input: 1645491600
-    // output: Tue Feb 22 09:00:00 2022
-    struct tm *tm = localtime(&t);
-    strftime(s, 25, "%c", tm);
+void startThreads(int file_count, char **filenames) {
+    int *localcounters[TNUM];
+    ThreadArgs arglist[file_count];
+    pthread_t threads[TNUM];
+    int blocksize = ceil((double)file_count/TNUM);
+    int i=0;
+    int start = 0;
+    for(; i<TNUM; i++){
+        localcounters[i] = (int*)malloc(9400*sizeof(int));
+        memset(localcounters[i], 0, COUNTER_SIZE*sizeof(int));
+        arglist[i].filenames = filenames;
+        arglist[i].start = start;
+        arglist[i].end = start + blocksize;
+        arglist[i].counter = localcounters[i];
+        start += blocksize;
+    }
+    arglist[i].end = file_count;
+
+    for(i=0; i<TNUM; i++){
+        pthread_create(&threads[i], NULL, &processfiles, &arglist[i]);
+    }
+    for(i=0; i<TNUM; i++) {
+        pthread_join(threads[i], NULL);
+    }
+    for(i=0; i<TNUM; i++) {
+        for(int idx=0; idx<COUNTER_SIZE; idx++)
+            counter[idx] += localcounters[i][idx];
+    }
 }
 
 int main(int argc, char **argv)
@@ -130,33 +196,52 @@ int main(int argc, char **argv)
 
     DIR *d;
     struct dirent *dir;
-    char temp[60];
+    char temp[50];
     temp[0] = '\0';
+
     d = opendir(dirname);
-    if (d)
+    // Count the number of files
+    int file_count = 0;
+    while ((dir = readdir(d)) != NULL) {
+        if (!strcmp (dir->d_name, "."))
+		    continue;
+	    if (!strcmp (dir->d_name, ".."))
+            continue;
+        file_count++;
+    }
+    closedir(d);
+
+    //Combine these two loops
+    char **filenames=(char**)malloc(file_count*sizeof(char*));
+    for(int i=0; i<file_count; i++) {
+        filenames[i] = (char*)malloc(60*(sizeof(char*)));
+        filenames[i][0] = '\0';
+    }
+    int i = 0;
+    d = opendir(dirname);
+    while ((dir = readdir(d)) != NULL)
     {
-        while ((dir = readdir(d)) != NULL)
-        {
-            if (!strcmp (dir->d_name, "."))
-		        continue;
-		    if (!strcmp (dir->d_name, ".."))
-		        continue;
-            // printf("%s\n", dir->d_name);
-            // can start operation here
-            strcat(temp, dirname);
-            strcat(temp, dir->d_name);
-            processfile(temp, counter);
-            temp[0] = '\0';
-        }
-        closedir(d);
+        if (!strcmp(dir->d_name, "."))
+            continue;
+        if (!strcmp(dir->d_name, ".."))
+            continue;
+        // printf("%s\n", dir->d_name);
+        strcat(filenames[i], dirname);
+        strcat(filenames[i], dir->d_name);
+        i++;
+    }
+    closedir(d);
+
+    if (file_count < 4) {
+        for(int i=0; i<file_count; i++)
+            processfile(filenames[i], counter);
+    } else {
+        startThreads(file_count, (char**)filenames);
     }
 
     // Do top K here.
     int topK[K];
     TopK(counter, topK);
-
-    // // Assume here I have array of indices with top values.
-    // int topK[5] = {1, 2, 3, 4, 5};
 
     // Do output here.
     printf("Top K frequently accessed hour:\n");
