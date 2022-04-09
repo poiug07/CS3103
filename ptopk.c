@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <errno.h>
@@ -9,11 +10,18 @@
 #include <time.h>
 
 #define COUNTER_SIZE 9400
+#define BLK_SIZE 4096
 
 int K;
 int counter[COUNTER_SIZE];
 char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
+
+long get_file_length(const char* file_name){
+	struct stat sb;
+	if (stat(file_name,&sb)==-1){exit(-1);}
+	return sb.st_size;
+}
 
 int compare_value_and_time(int *values, int t1, int t2)
 {
@@ -79,8 +87,53 @@ void TopK(int *counter, int *heap)
         qsort(heap, K, sizeof(int), cmpfunc);
 }
 
+void parse_block(int *counter, char* buffer, char* tail,int block_size, char* value_string){
+	int parsed_posi = 0;
+	int val_po=0;
+	long time_stamp;
+    int idx;
+	// parse the first entry
+	while(tail[val_po]!='\0'){
+		value_string[val_po]=tail[val_po];
+		val_po++;
+	}
+	while(buffer[parsed_posi]!=','){
+		value_string[val_po]=buffer[parsed_posi];
+		parsed_posi++;
+		val_po++;
+	}
+
+    time_stamp = atol(value_string);
+    value_string[val_po] = '\0';
+    idx = (time_stamp-start_timestamp)/3600;
+	counter[idx]++;
+	val_po=0;
+	parsed_posi++;
+
+	char current;
+	while(parsed_posi<block_size){
+		current = buffer[parsed_posi];
+		if (current==','){
+		    // former part is the target_value
+            buffer[parsed_posi]='\0';
+            time_stamp = atol(buffer+parsed_posi-10);
+            idx = (time_stamp-start_timestamp)/3600;
+            counter[idx]++;
+		}
+		tail[val_po]=current;
+		if(current=='\n'){
+		    // when it swtich the line
+			val_po=-1;// reset it again
+		}
+		// move the index
+		val_po++;
+		parsed_posi++;
+	}
+	tail[val_po]='\0';
+}
+
 void processfile(char *filename, int *global_counter) {
-    // malloc is slow, should init once and use it many times. Size is fixed.
+    // malloc is slow, should init once and use it many times. Size is fixed anyways.
     int *localcounter = (int*)malloc(9400*sizeof(int));
     memset(localcounter,0 ,COUNTER_SIZE*sizeof(int));
     // printf("%s\n", filename);
@@ -89,21 +142,28 @@ void processfile(char *filename, int *global_counter) {
 	if(!input){
 	    printf("process file->err:%d\n",errno);
 	    exit(errno);
-	} 
-    int buffer_size=40;
-	char buffer[buffer_size+1];
-
-	int i=0;
-	int line=0;
-	while(fgets(buffer,buffer_size,input)!=NULL){
-		char* temp;
-		long time_stamp = strtol(buffer,&temp,10);
-		localcounter[(time_stamp-start_timestamp)/3600]++;
 	}
 
-    for(int i=0; i!=COUNTER_SIZE; ++i) {
-        global_counter[i] += localcounter[i];
+    fseek(input,0,SEEK_SET);
+
+    int file_len = get_file_length(filename);
+    char buffer[BLK_SIZE];
+    char tail[40];
+    tail[0] = '\0';
+    int current_read=0;
+    int readed = 0;
+    char value_string[40];
+
+    while(readed<file_len){
+		current_read = fread(buffer, 1, BLK_SIZE, input);
+		readed+=current_read;
+		parse_block(localcounter, buffer, tail,current_read, value_string);
+	}
+
+    for(int i=COUNTER_SIZE-1; i!=-1; i--) {
+        global_counter[i] += counter[i];
     }
+
     free(localcounter);
     fclose(input);
 }
