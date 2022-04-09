@@ -10,7 +10,7 @@
 #define BLK_SIZE 4096;
 int max_entry = 2<<25;
 long start_time = 1645491600;
-int* counter_array; 
+int* counter_array;
 int block_count=0;
 
 
@@ -98,9 +98,9 @@ void* ReadChunk(void* arg){
 }
 
 void start_threads(int thread_num,ThreadArg* arg_list,pthread_t* readers,const char* file_name){
-	long file_len = get_file_length(file_name); 
+	long file_len = get_file_length(file_name);
 	long size_for_each_thread = file_len/ thread_num;
-	
+
 	int i=0;
 	int start_posi = 0;
 	for(i=0;i<thread_num-1;i++){
@@ -108,17 +108,17 @@ void start_threads(int thread_num,ThreadArg* arg_list,pthread_t* readers,const c
 		arg_list[i].start = start_posi;
 
 		start_posi+=size_for_each_thread;
-		
+
 		arg_list[i].end = start_posi;
 		arg_list[i].slice_size = BLK_SIZE;
-	} 
+	}
 
 	arg_list[i].input_file = fopen(file_name,"r");
 
 	arg_list[i].start=start_posi;
 	arg_list[i].end=file_len;
 	arg_list[i].slice_size = BLK_SIZE;
-	
+
 
 	// start the system
 	for (i=0;i<thread_num;i++){
@@ -141,16 +141,16 @@ int main(int argc, char** argv){
 	if(!input){
 	printf("err:%d",errno);
 	exit(errno);
-	} 
-	
+	}
+
 	int thread_num = 1;
 
 	counter_array = (int*)malloc(max_entry*sizeof(int));
-	
+
 	ThreadArg arg_list[thread_num];
 	pthread_t readers[thread_num];
 	// fill up the args
-	
+
 	start_threads(thread_num,arg_list,readers,file_name);
 	int i=0;
 	for (i=0;i<thread_num;i++){

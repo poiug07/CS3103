@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 int max_entry = 2<<25;
 long start_time = 1644167168;
-int* counter_array; 
+int* counter_array;
 
 struct thread_arg{
 FILE* input_file;
@@ -69,12 +69,12 @@ int main(int argc, char** argv){
 	if(!input){
 	printf("err:%d",errno);
 	exit(errno);
-	} 
-	
+	}
+
 	counter_array = (int*)malloc(max_entry*sizeof(int));
 
 	int thread_num = 4;
-	long file_len = get_file_length(file_name); 
+	long file_len = get_file_length(file_name);
 	long size_for_each_thread = file_len/ thread_num;
 
 	ThreadArg arg_list[thread_num];
@@ -89,9 +89,9 @@ int main(int argc, char** argv){
 		arg_list[i].start = start_posi;
 
 		start_posi+=size_for_each_thread;
-		
+
 		arg_list[i].end = start_posi;
-	} 
+	}
 
 	arg_list[i].input_file = fopen(file_name,"r");
 
@@ -108,7 +108,7 @@ int main(int argc, char** argv){
 	for (i=0;i<thread_num;i++){
 		fclose(arg_list[i].input_file);
 	}
-	int max =0;	
+	int max =0;
 	for (i =0;i<max_entry;i++){
 	    if (counter_array[i]>max) max =counter_array[i];
 	}

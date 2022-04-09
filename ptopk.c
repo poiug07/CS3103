@@ -89,7 +89,7 @@ void processfile(char *filename, int *global_counter) {
 	if(!input){
 	    printf("process file->err:%d\n",errno);
 	    exit(errno);
-	} 
+	}
     int buffer_size=40;
 	char buffer[buffer_size+1];
 
