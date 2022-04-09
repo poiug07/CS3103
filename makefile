@@ -1,4 +1,6 @@
-build: 
+build:
+	cc ptopk.c -o test.o -l pthread
+buildall: 
 	cc ptopk.c -o test.o -l pthread
 	cc single_threaded_read.c -o sr.o -l pthread
 	cc multi_threaded_read.c -o mr.o -l pthread

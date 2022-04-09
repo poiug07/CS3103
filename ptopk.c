@@ -87,11 +87,10 @@ void TopK(int *counter, int *heap)
         qsort(heap, K, sizeof(int), cmpfunc);
 }
 
-void parse_block(int *counter, char* buffer, char* tail,int block_size, char* value_string){
+void parse_block(int *localcounter, char* buffer, char* tail,int block_size, char* value_string){
 	int parsed_posi = 0;
 	int val_po=0;
 	long time_stamp;
-    int idx;
 	// parse the first entry
 	while(tail[val_po]!='\0'){
 		value_string[val_po]=tail[val_po];
@@ -103,10 +102,10 @@ void parse_block(int *counter, char* buffer, char* tail,int block_size, char* va
 		val_po++;
 	}
 
-    time_stamp = atol(value_string);
+    char *temp;
     value_string[val_po] = '\0';
-    idx = (time_stamp-start_timestamp)/3600;
-	counter[idx]++;
+    time_stamp = strtol(value_string+val_po-10,&temp,10);
+	localcounter[(time_stamp-start_timestamp)/3600]++;
 	val_po=0;
 	parsed_posi++;
 
@@ -116,9 +115,10 @@ void parse_block(int *counter, char* buffer, char* tail,int block_size, char* va
 		if (current==','){
 		    // former part is the target_value
             buffer[parsed_posi]='\0';
-            time_stamp = atol(buffer+parsed_posi-10);
-            idx = (time_stamp-start_timestamp)/3600;
-            counter[idx]++;
+            // time_stamp = atol(buffer+parsed_posi-10);
+            time_stamp = strtol(buffer+parsed_posi-10, &temp,10);
+            localcounter[(time_stamp-start_timestamp)/3600]++;
+            value_string[0] = '\0';
 		}
 		tail[val_po]=current;
 		if(current=='\n'){
@@ -134,9 +134,10 @@ void parse_block(int *counter, char* buffer, char* tail,int block_size, char* va
 
 void processfile(char *filename, int *global_counter) {
     // malloc is slow, should init once and use it many times. Size is fixed anyways.
-    int *localcounter = (int*)malloc(9400*sizeof(int));
-    memset(localcounter,0 ,COUNTER_SIZE*sizeof(int));
-    // printf("%s\n", filename);
+    long file_len = get_file_length(filename);
+
+    int *localcounter = (int*)malloc(COUNTER_SIZE*sizeof(int));
+    memset(localcounter,0, COUNTER_SIZE*sizeof(int));
     FILE* input = fopen(filename,"r");
 
 	if(!input){
@@ -144,15 +145,16 @@ void processfile(char *filename, int *global_counter) {
 	    exit(errno);
 	}
 
-    fseek(input,0,SEEK_SET);
-
-    int file_len = get_file_length(filename);
+    // fseek(input,0,SEEK_SET);
     char buffer[BLK_SIZE];
+
     char tail[40];
     tail[0] = '\0';
-    int current_read=0;
-    int readed = 0;
     char value_string[40];
+    value_string[0] = '\0';
+
+    int current_read=0;
+    long readed = 0;
 
     while(readed<file_len){
 		current_read = fread(buffer, 1, BLK_SIZE, input);
@@ -160,8 +162,8 @@ void processfile(char *filename, int *global_counter) {
 		parse_block(localcounter, buffer, tail,current_read, value_string);
 	}
 
-    for(int i=COUNTER_SIZE-1; i!=-1; i--) {
-        global_counter[i] += counter[i];
+    for(int i=0; i!=COUNTER_SIZE; ++i) {
+        global_counter[i] += localcounter[i];
     }
 
     free(localcounter);

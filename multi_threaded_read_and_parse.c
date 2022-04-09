@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <assert.h>
-#define BLK_SIZE 4096;
+#define BLK_SIZE 4096
 int max_entry = 2<<25;
 long start_time = 1645491600;
 int* counter_array; 
@@ -89,7 +89,7 @@ void* ReadChunk(void* arg){
 	arg_value->tail_frag[0]='\0';// init the tail
 	int current_read=0;
 	while(readed+start<end){
-		current_read = fread(buffer,1,arg_value->slice_size, input);
+		current_read = fread(buffer,sizeof(char),arg_value->slice_size, input);
 		readed+=current_read;
 		block_count++;
 		parse_block(buffer,arg_value->tail_frag,current_read,value_string);
