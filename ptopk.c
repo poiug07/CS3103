@@ -14,7 +14,7 @@
 
 int K;
 int counter[COUNTER_SIZE];
-// pthread_mutex_t counter_lock;
+pthread_mutex_t counter_lock;
 char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
 
@@ -151,10 +151,10 @@ void* processfiles(void* arg) {
         fclose(input);
     }
 
-    // pthread_mutex_lock(&counter_lock);
-    // for(int idx=0; idx<COUNTER_SIZE; idx++)
-    //     counter[idx] += localcounter[idx];
-    // pthread_mutex_unlock(&counter_lock);
+    pthread_mutex_lock(&counter_lock);
+    for(int idx=0; idx<COUNTER_SIZE; idx++)
+        counter[idx] += localcounter[idx];
+    pthread_mutex_unlock(&counter_lock);
 
     return 0;
 }
@@ -167,7 +167,7 @@ void startThreads(int file_count, char **filenames) {
     int i=0;
     int start = 0;
     for(; i<TNUM; i++){
-        localcounters[i] = (int*)malloc(9400*sizeof(int));
+        localcounters[i] = (int*)malloc(COUNTER_SIZE*sizeof(int));
         memset(localcounters[i], 0, COUNTER_SIZE*sizeof(int));
         arglist[i].filenames = filenames;
         arglist[i].start = start;
@@ -185,10 +185,10 @@ void startThreads(int file_count, char **filenames) {
     for(i=0; i<TNUM; i++) {
         pthread_join(threads[i], NULL);
     }
-    for(i=0; i<TNUM; i++) {
-        for(int idx=0; idx<COUNTER_SIZE; idx++)
-            counter[idx] += localcounters[i][idx];
-    }
+    // for(i=0; i<TNUM; i++) {
+    //     for(int idx=0; idx<COUNTER_SIZE; idx++)
+    //         counter[idx] += localcounters[i][idx];
+    // }
 }
 
 int main(int argc, char **argv)
