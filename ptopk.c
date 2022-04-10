@@ -243,7 +243,7 @@ int main(int argc, char **argv)
     }
     closedir(d);
 
-    if (file_count < 4) {
+    if (file_count < 16) {
         for(int i=0; i<file_count; i++)
             processfile(filenames[i], counter);
     } else {
