@@ -16,7 +16,7 @@
 
 int K;
 int counter[COUNTER_SIZE];
-// pthread_mutex_t counter_lock;
+pthread_mutex_t counter_lock;
 char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
 
@@ -153,7 +153,7 @@ void parse_block(int *localcounter, char* buffer, char* tail,int block_size, cha
 	tail[val_po]='\0';
 }
 
-void processfile(char *filename, int *counter) {
+void processfile(char *filename, int *localcounter) {
     // malloc is slow, should init once and use it many times. Size is fixed anyways.
     long file_len = get_file_length(filename);
 
@@ -177,16 +177,16 @@ void processfile(char *filename, int *counter) {
 
     while(readed<file_len){
 		current_read = fread(buffer, 1, BLK_SIZE, input);
+		parse_block(localcounter, buffer, tail,current_read, value_string);
 		readed += current_read;
-		parse_block(counter, buffer, tail,current_read, value_string);
 	}
 
     // pthread_mutex_lock(&counter_lock);
     // for(int i=0; i!=COUNTER_SIZE; ++i) {
-    //     global_counter[i] += localcounter[i];
+    //     counter[i] += localcounter[i];
     // }
     // pthread_mutex_unlock(&counter_lock);
-    fclose(input);
+    // fclose(input);
 }
 
 void* processfiles(void* arg) {
