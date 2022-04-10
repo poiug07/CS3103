@@ -167,18 +167,18 @@ void startThreads(int file_count, char **filenames) {
     int i=0;
     int start = 0;
     for(; i<TNUM; i++){
-        // printf("%d here\n", i);
         localcounters[i] = (int*)malloc(9400*sizeof(int));
         memset(localcounters[i], 0, COUNTER_SIZE*sizeof(int));
         arglist[i].filenames = filenames;
         arglist[i].start = start;
-        arglist[i].end = start + blocksize;
+        start += blocksize;
+        arglist[i].end = start;
         arglist[i].counter = localcounters[i];
         arglist[i].filecount = file_count;
-        start += blocksize;
     }
     arglist[TNUM - 1].end = file_count;
 
+    // DO NOT merge 2 loops for creating and wait. It is slower for some reason.    
     for(i=0; i<TNUM; i++){
         pthread_create(&threads[i], NULL, &processfiles, &arglist[i]);
     }
