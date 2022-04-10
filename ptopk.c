@@ -9,8 +9,8 @@
 #include <pthread.h>
 #include <time.h>
 
-#define COUNTER_SIZE 9400
-#define BLK_SIZE 4096
+#define COUNTER_SIZE 9333
+#define BLK_SIZE 2048
 
 int K;
 int counter[COUNTER_SIZE];
@@ -118,6 +118,7 @@ void parse_block(int *localcounter, char* buffer, char* tail,int block_size, cha
             time_stamp = atol(buffer+parsed_posi-10);
             localcounter[(time_stamp-start_timestamp)/3600]++;
             value_string[0] = '\0';
+            parsed_posi += 5;
 		}
 		tail[val_po]=current;
 		if(current=='\n'){
