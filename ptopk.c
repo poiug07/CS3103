@@ -9,12 +9,12 @@
 #include <stdio.h>
 #include <math.h>
 
-#define COUNTER_SIZE 9323
+#define COUNTER_SIZE 9400
 #define TNUM 4
 
 int K;
 int counter[COUNTER_SIZE];
-pthread_mutex_t counter_lock;
+// pthread_mutex_t counter_lock;
 char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
 
@@ -100,6 +100,11 @@ void TopK(int *counter, int *heap)
         qsort(heap, K, sizeof(int), cmpfunc);
 }
 
+#define PARSE_FIRST_DIGIT  \
+        time_stamp = *at++ - '0';
+#define PARSE_NEXT_DIGIT              \
+        time_stamp = time_stamp * 10 + *at++ - '0';
+
 void processfile(char *filename, int *counter) {
     // printf("%s\n", filename);
     FILE* input = fopen(filename,"r");
@@ -112,9 +117,23 @@ void processfile(char *filename, int *counter) {
 	char buffer[buffer_size+1];
 
 	int line=0;
+    long time_stamp;
+    char *at;
 	while(fgets(buffer,buffer_size,input)!=NULL){
-		char* temp;
-		long time_stamp = strtol(buffer,&temp,10);
+        // // loop unrolling
+        at = buffer;
+        PARSE_FIRST_DIGIT
+        PARSE_NEXT_DIGIT
+        PARSE_NEXT_DIGIT
+        PARSE_NEXT_DIGIT
+        PARSE_NEXT_DIGIT
+        PARSE_NEXT_DIGIT
+        PARSE_NEXT_DIGIT
+        PARSE_NEXT_DIGIT
+        PARSE_NEXT_DIGIT
+        PARSE_NEXT_DIGIT
+
+		// long time_stamp = strtol(buffer, NULL, 10);
 		counter[(time_stamp-start_timestamp)/3600]++;
 	}
 
@@ -153,10 +172,10 @@ void* processfiles(void* arg) {
         fclose(input);
     }
 
-    pthread_mutex_lock(&counter_lock);
-    for(int idx=0; idx<COUNTER_SIZE; idx++)
-        counter[idx] += localcounter[idx];
-    pthread_mutex_unlock(&counter_lock);
+    // pthread_mutex_lock(&counter_lock);
+    // for(int idx=0; idx<COUNTER_SIZE; idx++)
+    //     counter[idx] += localcounter[idx];
+    // pthread_mutex_unlock(&counter_lock);
 
     return 0;
 }
@@ -187,10 +206,10 @@ void startThreads(int file_count, char **filenames) {
     for(i=0; i<TNUM; i++) {
         pthread_join(threads[i], NULL);
     }
-    // for(i=0; i<TNUM; i++) {
-    //     for(int idx=0; idx<COUNTER_SIZE; idx++)
-    //         counter[idx] += localcounters[i][idx];
-    // }
+    for(i=0; i<TNUM; i++) {
+        for(int idx=0; idx<COUNTER_SIZE; idx++)
+            counter[idx] += localcounters[i][idx];
+    }
 }
 
 int main(int argc, char **argv)
