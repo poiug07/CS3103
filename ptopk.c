@@ -11,7 +11,7 @@
 #include <math.h>
 
 #define COUNTER_SIZE 9323
-#define TNUM 4
+#define TNUM 2
 #define BLK_SIZE 2048
 
 int K;
