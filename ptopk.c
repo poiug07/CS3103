@@ -8,7 +8,7 @@
 #include <pthread.h>
 #include <time.h>
 
-#define COUNTER_SIZE 9400
+#define COUNTER_SIZE 9321
 
 int K;
 int counter[COUNTER_SIZE];
