@@ -11,8 +11,8 @@
 
 #include <stdint.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 
 #define COUNTER_SIZE 9323
 
@@ -118,62 +118,7 @@ void TopK(int *counter, int *heap)
             heapify(heap, counter, 0);
         }
     }
-
-    // this should put values in descending order
-    // I think it is just faster to use qsort,
-    // but maybe wrong. TODO: Need to check.
     qsort(heap, K, sizeof(int), cmpfunc);
-}
-
-static void parse_block(int *localcounter, char *buffer, char *tail, int block_size, char *value_string)
-{
-    int parsed_posi = 0;
-    int val_po = 0;
-    long time_stamp;
-    // parse the first entry
-    while (tail[val_po] != '\0')
-    {
-        value_string[val_po] = tail[val_po];
-        val_po++;
-    }
-    while (buffer[parsed_posi] != ',')
-    {
-        value_string[val_po] = buffer[parsed_posi];
-        parsed_posi++;
-        val_po++;
-    }
-
-    char *temp;
-    value_string[val_po] = '\0';
-    time_stamp = atol(value_string + val_po - 10);
-    localcounter[(time_stamp - start_timestamp) / 3600]++;
-    val_po = 0;
-    parsed_posi++;
-
-    char current;
-    while (parsed_posi < block_size)
-    {
-        current = buffer[parsed_posi];
-        if (current == ',')
-        {
-            // former part is the target_value
-            buffer[parsed_posi] = '\0';
-            time_stamp = atol(buffer + parsed_posi - 10);
-            localcounter[(time_stamp - start_timestamp) / 3600]++;
-            value_string[0] = '\0';
-            parsed_posi += 5;
-        }
-        tail[val_po] = current;
-        if (current == '\n')
-        {
-            // when it swtich the line
-            val_po = -1; // reset it again
-        }
-        // move the index
-        val_po++;
-        parsed_posi++;
-    }
-    tail[val_po] = '\0';
 }
 
 #define PARSE_FIRST_DIGIT  \
@@ -201,6 +146,7 @@ static void parse_block(int *localcounter, char *buffer, char *tail, int block_s
 static void
 parse_chunk(char *at, const char *end, int *counter)
 {
+    char* buf_start = at;
     long val = 0;
     while (at < end)
     {
@@ -226,6 +172,8 @@ parse_chunk(char *at, const char *end, int *counter)
         // Skip newline character.
         at++;
     }
+    // munmap(buf_start, end-buf_start);
+    // madvise(buf_start, end-buf_start, 4);
 }
 
 typedef struct
@@ -374,6 +322,7 @@ void startThreads(int file_count, char **filenames)
     {
         for (int idx = 0; idx < COUNTER_SIZE; idx++)
             counter[idx] += localcounters[i][idx];
+        free(localcounters[i]);
     }
 }
 
