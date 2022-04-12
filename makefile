@@ -1,5 +1,5 @@
 build: 
-	cc ptopk.c -o test.o -lm -l pthread
+	cc ptopk.c -o test.o -l pthread
 	cc single_threaded_read.c -o sr.o -l pthread
 	cc multi_threaded_read.c -o mr.o -l pthread
 	cc single_threaded_read_and_parse.c -o srp.o -l pthread
