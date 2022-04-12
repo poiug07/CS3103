@@ -10,7 +10,7 @@
 #include <math.h>
 
 #define COUNTER_SIZE 9323
-#define TNUM 5
+#define TNUM 4
 
 int K;
 int counter[COUNTER_SIZE];
