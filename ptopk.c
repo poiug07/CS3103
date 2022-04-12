@@ -144,7 +144,7 @@ void processfile(char *filename, int *counter) {
         // PARSE_NEXT_DIGIT
         // PARSE_NEXT_DIGIT
 
-		counter[(time_stamp-start_timestamp)/3600]++;
+		counter[(unsigned)(time_stamp-start_timestamp)/3600]++;
 	}
     fclose(input);
 }
@@ -178,7 +178,7 @@ void* processfiles(void* arg) {
             PARSE_NEXT_DIGIT
             time_stamp *= 100;
 
-            localcounter[(time_stamp-start_timestamp)/3600]++;
+            localcounter[(unsigned)(time_stamp-start_timestamp)/3600]++;
         }
         fclose(input);
     }
