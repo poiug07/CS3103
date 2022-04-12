@@ -16,7 +16,7 @@
 
 int K;
 int counter[COUNTER_SIZE];
-pthread_mutex_t counter_lock;
+// pthread_mutex_t counter_lock;
 long start_timestamp; // minimal timestamp supplied as argv
 
 struct thread_args
@@ -70,8 +70,11 @@ void heapify(int *heap, int *counter, int i)
 {
     // K - global variable defining size of heap
     int largest = i;
-    int l = 2 * i + 1;
-    int r = 2 * i + 2;
+    int l; 
+    int r;
+    heapify_start:
+    l = 2 * i + 1;
+    r = 2 * i + 2;
     if (l < K && compare_value_and_time(counter, heap[l], heap[largest]) < 0)
         largest = l;
     if (r < K && compare_value_and_time(counter, heap[r], heap[largest]) < 0)
@@ -79,7 +82,9 @@ void heapify(int *heap, int *counter, int i)
     if (largest != i)
     {
         swap(&heap[i], &heap[largest]);
-        heapify(heap, counter, largest);
+        i = largest;
+        goto heapify_start;
+        // heapify(heap, counter, largest);
     }
 }
 
@@ -225,10 +230,14 @@ void *processfiles(void *arg)
     char buffer[BLK_SIZE];
     for (int i = args->start; i != end; ++i)
     {
-        long file_len = get_file_length(filenames[i]);
-
         FILE *input = fopen(filenames[i], "r");
         setvbuf(input, NULL, _IONBF, 0);
+
+        long file_len = get_file_length(filenames[i]);
+
+        // fseek(input, 0, SEEK_END);
+        // long file_len = ftell(input);
+        fseek(input, 0, SEEK_SET);
 
         if (!input)
         {
@@ -248,7 +257,6 @@ void *processfiles(void *arg)
             readed += current_read;
         }
     }
-
     // pthread_mutex_lock(&counter_lock);
     // for(int idx=0; idx<COUNTER_SIZE; idx++)
     //     counter[idx] += localcounter[idx];
