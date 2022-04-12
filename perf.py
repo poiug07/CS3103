@@ -7,7 +7,7 @@ import time
 # process_time will not include time elapsed during sleep.
 # ./test.o case5/ 1645491600 5
 
-NUM = 10
+NUM = 5
 
 random.seed(2003)
 start_time = 1645491600
@@ -17,7 +17,7 @@ total_time = 0.0
 
 for i in range (NUM):
     t=time.time()
-    cmd = ["./test.o", "case5/", "1645491600", str(int(random.random()*9000))]
+    cmd = ["./test.o", "case5/", "1645491600", K]
     process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     elapsed_time = time.time() - t
     total_time += elapsed_time
