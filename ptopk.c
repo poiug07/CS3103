@@ -186,7 +186,7 @@ void processfile(char *filename, int *localcounter)
     FILE *input = fopen(filename, "r");
     // setvbuf(stdout, buffer, _IOFBF, BLK_SIZE);
     // Disable built-in buffering since it does, double buffering in this case (1 by c and 1 by me).
-    setvbuf(input, NULL, _IONBF, 0);
+    // setvbuf(input, NULL, _IONBF, 0);
 
     if (!input)
     {
@@ -377,6 +377,7 @@ int main(int argc, char **argv)
         // https://stackoverflow.com/questions/5975378/fastest-way-to-print-a-certain-number-of-characters-to-stdout-in-c
         time_string((time_t)start_timestamp + topK[i] * 3600, temp);
         printf("%s\t%d\n", temp, counter[topK[i]]);
+        fflush(stdout);
     }
 
     return 0;
