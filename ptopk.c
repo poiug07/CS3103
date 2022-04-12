@@ -85,6 +85,7 @@ void processfile(char *filename, int *global_counter) {
     memset(localcounter,0 ,COUNTER_SIZE*sizeof(int));
     // printf("%s\n", filename);
     FILE* input = fopen(filename,"r");
+    setvbuf(input, NULL, _IOFBF, 16384);
 
 	if(!input){
 	    printf("process file->err:%d\n",errno);
@@ -161,8 +162,6 @@ int main(int argc, char **argv)
     // Do output here.
     printf("Top K frequently accessed hour:\n");
     for(int i=0; i<K; i++) {
-        // Can do printing faster
-        // https://stackoverflow.com/questions/5975378/fastest-way-to-print-a-certain-number-of-characters-to-stdout-in-c
         time_string((time_t)start_timestamp+topK[i]*3600, temp);
         printf("%s\t%d\n", temp, counter[topK[i]]);
     }
