@@ -144,7 +144,6 @@ void processfile(char *filename, int *counter) {
         // PARSE_NEXT_DIGIT
         // PARSE_NEXT_DIGIT
 
-		// long time_stamp = strtol(buffer, NULL, 10);
 		counter[(time_stamp-start_timestamp)/3600]++;
 	}
     fclose(input);
@@ -155,6 +154,10 @@ void* processfiles(void* arg) {
     int *localcounter = args->counter;
     int end = args->end;
     char **filenames = args->filenames;
+    int buffer_size=40;
+    char buffer[buffer_size+1];
+    long time_stamp;
+    char *at;
     for(int i=args->start; i<end; i++){
         FILE* input = fopen(filenames[i] ,"r");
         // setvbuf(input, NULL, _IOFBF, 16384);
@@ -163,11 +166,18 @@ void* processfiles(void* arg) {
             printf("process files->err:%d\n",errno);
             exit(errno);
         } 
-        int buffer_size=40;
-        char buffer[buffer_size+1];
         while(fgets(buffer,buffer_size,input)!=NULL){
-            char* temp;
-            long time_stamp = strtol(buffer,&temp,10);
+            at = buffer;
+            PARSE_FIRST_DIGIT
+            PARSE_NEXT_DIGIT
+            PARSE_NEXT_DIGIT
+            PARSE_NEXT_DIGIT
+            PARSE_NEXT_DIGIT
+            PARSE_NEXT_DIGIT
+            PARSE_NEXT_DIGIT
+            PARSE_NEXT_DIGIT
+            time_stamp *= 100;
+
             localcounter[(time_stamp-start_timestamp)/3600]++;
         }
         fclose(input);
