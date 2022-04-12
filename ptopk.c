@@ -28,7 +28,7 @@ struct thread_args {
 
 typedef struct thread_args ThreadArgs;
 
-void time_string(time_t t, char* s) {
+static void time_string(time_t t, char* s) {
     // sample testcase
     // input: 1645491600
     // output: Tue Feb 22 09:00:00 2022
@@ -36,7 +36,7 @@ void time_string(time_t t, char* s) {
     strftime(s, 25, "%c", tm);
 }
 
-int compare_value_and_time(int *values, int t1, int t2)
+static int compare_value_and_time(int *values, int t1, int t2)
 {
     // Returns negative if value of values on t1 is smaller than t2
     // if values same, returns negative value if t1 smaller than t2
@@ -52,22 +52,26 @@ void swap(int *a, int *b) {
         *b = temp;
 }
 
-void heapify(int* heap, int* counter, int i) {
+static void heapify(int* heap, int* counter, int i) {
         // K - global variable defining size of heap
         int largest = i;
-        int l = 2*i+1;
-        int r = 2*i+2;
+        int l; 
+        int r;
+        heapify_loop:
+        l = 2*i+1;
+        r = 2*i+2;
         if(l<K && compare_value_and_time(counter, heap[l], heap[largest]) < 0)
                 largest = l;
         if(r<K && compare_value_and_time(counter, heap[r], heap[largest]) < 0)
                 largest = r;
-        if(largest!=i){
-                swap(&heap[i], &heap[largest]);
-                heapify(heap, counter, largest);
-        }
+        if(largest==i) return;
+        swap(&heap[i], &heap[largest]);
+        i = largest;
+        goto heapify_loop;
+        // heapify(heap, counter, largest);
 }
 
-void buildHeap(int *heap, int *counter) {
+static void buildHeap(int *heap, int *counter) {
     // Calling Heapify for all non leaf nodes
     // K - global variable denoting size of heap
     for (int i = K / 2 - 1; i >= 0; i--) {
@@ -136,13 +140,6 @@ void processfile(char *filename, int *counter) {
 		// long time_stamp = strtol(buffer, NULL, 10);
 		counter[(time_stamp-start_timestamp)/3600]++;
 	}
-
-    // pthread_mutex_lock(&counter_lock);
-    // for(int i=0; i!=COUNTER_SIZE; ++i) {
-    //     global_counter[i] += localcounter[i];
-    // }
-    // pthread_mutex_unlock(&counter_lock);
-    // free(localcounter);
     fclose(input);
 }
 
