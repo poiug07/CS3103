@@ -1,27 +1,29 @@
 #!/usr/bin/python3
 import random
+import sys
 import subprocess
 import streamlit as st
 import time
 
-# process_time will not include time elapsed during sleep.
-# ./test.o case5/ 1645491600 5
 
-NUM = 5
-
+# ./perf.py <number of to run before calculating average>
+NUM = int(sys.argv[1])
 random.seed(2003)
 start_time = 1645491600
-dir="case5/"
-K = 5
-total_time = 0.0
+total_times = 0.0
 
-for i in range (NUM):
+def run(dir, K):
     t=time.time()
-    cmd = ["./test.o", "case5/", "1645491600", K]
+    cmd = ["./test.o", dir, "1645491600", K]
     process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     elapsed_time = time.time() - t
-    total_time += elapsed_time
-    # print(process.stdout.decode('utf-8'))
-    print(elapsed_time)
+    return elapsed_time
 
-print(total_time/NUM)
+if __name__ == "__main__":
+    for j in range (NUM):
+        total=0
+        for i in range (5):
+            total += run("case%d/"%(i+1), str(int(random.random()*9000)))
+        total_times += total
+
+    print("Average time: ", total_times/NUM)
