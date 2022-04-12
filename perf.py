@@ -5,8 +5,7 @@ import subprocess
 import streamlit as st
 import time
 
-
-# ./perf.py <number of to run before calculating average>
+# ./perf.py <number of executions ot average>
 NUM = int(sys.argv[1])
 random.seed(2003)
 start_time = 1645491600
