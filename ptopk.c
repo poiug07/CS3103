@@ -15,6 +15,8 @@
 #include <sys/mman.h>
 
 #define COUNTER_SIZE 9323
+#define TNUM 4
+#define BLK_SIZE 4096
 
 int K;
 int counter[COUNTER_SIZE];
@@ -139,9 +141,6 @@ void TopK(int *counter, int *heap)
     {                                 \
         goto done;                    \
     }
-
-#define TNUM 2
-#define BLK_SIZE 4096
 
 static void
 parse_chunk(char *at, const char *end, int *counter)
