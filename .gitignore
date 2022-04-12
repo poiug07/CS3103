@@ -8,6 +8,8 @@ case3/
 case4/
 case5/
 *.o
+myoutput
+referenceoutput
 
 # Node artifact files
 node_modules/

@@ -75,7 +75,7 @@ static void heapify(int* heap, int* counter, int i) {
 static void buildHeap(int *heap, int *counter) {
     // Calling Heapify for all non leaf nodes
     // K - global variable denoting size of heap
-    for (int i = K / 2 - 1; i >= 0; i--) {
+    for (int i = (K/2) - 1; i >= 0; i--) {
         heapify(heap, counter, i);
     }
 }
@@ -85,9 +85,9 @@ int cmpfunc(const void * a, const void * b) {
     int t1 = *(int*)a;
     int t2 = *(int*)b;
     if (counter[t1] != counter[t2])
-        return counter[t1] > counter[t2];
+        return counter[t1] < counter[t2];
     else
-        return t1 > t2;
+        return t1 < t2;
 //    return  -compare_value_and_time(counter, *(int*)a, *(int*)b);
 }
 
@@ -119,6 +119,7 @@ void TopK(int *counter, int *heap)
 void processfile(char *filename, int *counter) {
     // printf("%s\n", filename);
     FILE* input = fopen(filename,"r");
+    setvbuf(stdout, NULL, _IOFBF, 16384);
 
 	if(!input){
 	    printf("process file->err:%d\n",errno);
@@ -140,9 +141,9 @@ void processfile(char *filename, int *counter) {
         PARSE_NEXT_DIGIT
         PARSE_NEXT_DIGIT
         PARSE_NEXT_DIGIT
+        // PARSE_NEXT_DIGIT
+        // PARSE_NEXT_DIGIT
         time_stamp *= 100;
-        // PARSE_NEXT_DIGIT
-        // PARSE_NEXT_DIGIT
 
 		counter[(unsigned)(time_stamp-start_timestamp)/3600]++;
 	}
@@ -176,6 +177,8 @@ void* processfiles(void* arg) {
             PARSE_NEXT_DIGIT
             PARSE_NEXT_DIGIT
             PARSE_NEXT_DIGIT
+            // PARSE_NEXT_DIGIT
+            // PARSE_NEXT_DIGIT
             time_stamp *= 100;
 
             localcounter[(unsigned)(time_stamp-start_timestamp)/3600]++;
@@ -231,10 +234,8 @@ int main(int argc, char **argv)
     // Count the number of files
     int file_count = 0;
     while ((dir = readdir(d)) != NULL) {
-        if (!strcmp (dir->d_name, "."))
+        if (dir->d_name[0]=='.')
 		    continue;
-	    if (!strcmp (dir->d_name, ".."))
-            continue;
         file_count++;
     }
     closedir(d);
@@ -249,10 +250,8 @@ int main(int argc, char **argv)
     d = opendir(dirname);
     while ((dir = readdir(d)) != NULL)
     {
-        if (!strcmp(dir->d_name, "."))
-            continue;
-        if (!strcmp(dir->d_name, ".."))
-            continue;
+        if (dir->d_name[0]=='.')
+		    continue;
         // printf("%s\n", dir->d_name);
         strcat(filenames[i], dirname);
         strcat(filenames[i], dir->d_name);
