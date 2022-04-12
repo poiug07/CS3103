@@ -20,7 +20,7 @@ long start_timestamp; // minimal timestamp supplied as argv
 struct thread_args {
     int * counter;
     char** filenames;
-    int filecount;
+    // int filecount;
     int start;
     int end;
 };
@@ -152,11 +152,9 @@ void processfile(char *filename, int *counter) {
 void* processfiles(void* arg) {
     ThreadArgs *args = (ThreadArgs*)arg;
     int *localcounter = args->counter;
-    int start = args->start;
     int end = args->end;
     char **filenames = args->filenames;
-    for(int i=start; i<end; i++){
-        // printf("%s\n", filenames[i]);
+    for(int i=args->start; i<end; i++){
         FILE* input = fopen(filenames[i] ,"r");
         // setvbuf(input, NULL, _IOFBF, 16384);
 
@@ -166,7 +164,6 @@ void* processfiles(void* arg) {
         } 
         int buffer_size=40;
         char buffer[buffer_size+1];
-        int line=0;
         while(fgets(buffer,buffer_size,input)!=NULL){
             char* temp;
             long time_stamp = strtol(buffer,&temp,10);
@@ -185,14 +182,12 @@ void startThreads(int file_count, char **filenames) {
     int i=0;
     int start = 0;
     for(; i<TNUM; i++){
-        localcounters[i] = (int*)malloc(COUNTER_SIZE*sizeof(int));
-        memset(localcounters[i], 0, COUNTER_SIZE*sizeof(int));
+        localcounters[i] = (int*)calloc(COUNTER_SIZE, sizeof(int));
         arglist[i].filenames = filenames;
         arglist[i].start = start;
         start += blocksize;
         arglist[i].end = start;
         arglist[i].counter = localcounters[i];
-        arglist[i].filecount = file_count;
     }
     arglist[TNUM - 1].end = file_count;
 
@@ -211,11 +206,6 @@ void startThreads(int file_count, char **filenames) {
 
 int main(int argc, char **argv)
 {
-    // Sleep function to artificially slown down program
-    // struct timespec ts;
-    // ts.tv_sec = 150 / 1000;
-    // ts.tv_nsec = (150 % 1000) * 1000000;
-    // nanosleep(&ts, NULL);
     char dirname[40];  // To store directory
     strcpy(dirname, argv[1]);
     start_timestamp = atol(argv[2]);
@@ -276,7 +266,7 @@ int main(int argc, char **argv)
     for(int i=0; i<K; i++) {
         // Can do printing faster
         // https://stackoverflow.com/questions/5975378/fastest-way-to-print-a-certain-number-of-characters-to-stdout-in-c
-        time_string((time_t)start_timestamp+topK[i]*3600, temp);
+        time_string(start_timestamp+topK[i]*3600, temp);
         printf("%s\t%d\n", temp, counter[topK[i]]);
     }
 

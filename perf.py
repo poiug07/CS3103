@@ -22,7 +22,7 @@ if __name__ == "__main__":
     for j in range (NUM):
         total=0
         for i in range (5):
-            total += run("case%d/"%(i+1), str(int(random.random()*9000)+1))
+            total += run("case%d/"%(i+1), str(200))
         total_times += total
 
     print("Average time: ", total_times/NUM)
