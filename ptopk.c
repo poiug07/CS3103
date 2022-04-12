@@ -9,18 +9,17 @@
 #include <stdio.h>
 #include <math.h>
 
-#define COUNTER_SIZE 9400
+#define COUNTER_SIZE 9321
 #define TNUM 4
 
 int K;
 int counter[COUNTER_SIZE];
 // pthread_mutex_t counter_lock;
-char dirname[40];  // To store directory
 long start_timestamp; // minimal timestamp supplied as argv
 
 struct thread_args {
-    char** filenames;
     int * counter;
+    char** filenames;
     int filecount;
     int start;
     int end;
@@ -36,15 +35,17 @@ static void time_string(time_t t, char* s) {
     strftime(s, 25, "%c", tm);
 }
 
-static int compare_value_and_time(int *values, int t1, int t2)
-{
-    // Returns negative if value of values on t1 is smaller than t2
-    // if values same, returns negative value if t1 smaller than t2
-    if (values[t1] != values[t2])
-        return values[t1] - values[t2];
-    else
-        return t1 - t2;
-}
+// static int compare_value_and_time(int *values, int t1, int t2)
+// {
+//     // Returns negative if value of values on t1 is smaller than t2
+//     // if values same, returns negative value if t1 smaller than t2
+//     if (values[t1] != values[t2])
+//         return values[t1] - values[t2];
+//     else
+//         return t1 - t2;
+// }
+
+#define COMPARE(v, a, b) ((v[a]!=v[b])?(v[a]<v[b]):(a<b))
 
 void swap(int *a, int *b) {
         int temp = *a;
@@ -60,9 +61,9 @@ static void heapify(int* heap, int* counter, int i) {
         heapify_loop:
         l = 2*i+1;
         r = 2*i+2;
-        if(l<K && compare_value_and_time(counter, heap[l], heap[largest]) < 0)
+        if(l<K && COMPARE(counter, heap[l], heap[largest]))
                 largest = l;
-        if(r<K && compare_value_and_time(counter, heap[r], heap[largest]) < 0)
+        if(r<K && COMPARE(counter, heap[r], heap[largest]))
                 largest = r;
         if(largest==i) return;
         swap(&heap[i], &heap[largest]);
@@ -81,18 +82,24 @@ static void buildHeap(int *heap, int *counter) {
 
 int cmpfunc(const void * a, const void * b) {
     // requires global counter value to be set
-   return  -compare_value_and_time(counter, *(int*)a, *(int*)b);
+    int t1 = *(int*)a;
+    int t2 = *(int*)b;
+    if (counter[t1] != counter[t2])
+        return counter[t1] > counter[t2];
+    else
+        return t1 > t2;
+//    return  -compare_value_and_time(counter, *(int*)a, *(int*)b);
 }
 
 void TopK(int *counter, int *heap)
 {
         // K - global variable denoting size of heap
-        for(int i=0; i<K; i++) {
+        for(int i=0; i!=K; i++) {
                 heap[i] = i;
         }
         buildHeap(heap, counter);
-        for(int i=K; i<COUNTER_SIZE; i++) {
-                if(compare_value_and_time(counter, heap[0], i)<0){
+        for(int i=K; i!=COUNTER_SIZE; i++) {
+                if(COMPARE(counter, heap[0], i)){
                         heap[0] = i;
                         heapify(heap, counter, 0);
                 }
@@ -116,11 +123,10 @@ void processfile(char *filename, int *counter) {
 	if(!input){
 	    printf("process file->err:%d\n",errno);
 	    exit(errno);
-	} 
-    int buffer_size=40;
+	}
+    int buffer_size = 40;
 	char buffer[buffer_size+1];
 
-	int line=0;
     long time_stamp;
     char *at;
 	while(fgets(buffer,buffer_size,input)!=NULL){
@@ -168,12 +174,6 @@ void* processfiles(void* arg) {
         }
         fclose(input);
     }
-
-    // pthread_mutex_lock(&counter_lock);
-    // for(int idx=0; idx<COUNTER_SIZE; idx++)
-    //     counter[idx] += localcounter[idx];
-    // pthread_mutex_unlock(&counter_lock);
-
     return 0;
 }
 
@@ -216,13 +216,11 @@ int main(int argc, char **argv)
     // ts.tv_sec = 150 / 1000;
     // ts.tv_nsec = (150 % 1000) * 1000000;
     // nanosleep(&ts, NULL);
-
+    char dirname[40];  // To store directory
     strcpy(dirname, argv[1]);
     start_timestamp = atol(argv[2]);
     K = atoi(argv[3]);
     // printf("%s %ld %d\n", dir, minstamp, K);
-
-    // 65536 is preffered block size
 
     memset(counter, 0, COUNTER_SIZE);
 
