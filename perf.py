@@ -14,7 +14,7 @@ total_times = 0.0
 def run(dir, K):
     cmd = ["./test.o", dir, "1645491600", K]
     t=time.time()
-    process = subprocess.run(cmd, stdout=sys.stdout, stderr=subprocess.PIPE)
+    process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     elapsed_time = time.time() - t
     return elapsed_time
 

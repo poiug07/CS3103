@@ -140,8 +140,9 @@ void processfile(char *filename, int *counter) {
         PARSE_NEXT_DIGIT
         PARSE_NEXT_DIGIT
         PARSE_NEXT_DIGIT
-        PARSE_NEXT_DIGIT
-        PARSE_NEXT_DIGIT
+        time_stamp *= 100;
+        // PARSE_NEXT_DIGIT
+        // PARSE_NEXT_DIGIT
 
 		// long time_stamp = strtol(buffer, NULL, 10);
 		counter[(time_stamp-start_timestamp)/3600]++;
