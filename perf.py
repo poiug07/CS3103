@@ -14,7 +14,7 @@ total_times = 0.0
 def run(dir, K):
     cmd = ["./test.o", dir, "1645491600", K]
     t=time.time()
-    process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.run(cmd, stdout=sys.stdout, stderr=subprocess.PIPE)
     elapsed_time = time.time() - t
     return elapsed_time
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     for j in range (NUM):
         total=0
         for i in range (5):
-            total += run("case%d/"%(i+1), str(200))
+            total += run("case%d/"%(i+1), str(9000))
         total_times += total
 
     print("Average time: ", total_times/NUM)
