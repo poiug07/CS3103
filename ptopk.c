@@ -136,7 +136,7 @@ void* processfiles(void* arg) {
     for(int i=start; i<end; i++){
         // printf("%s\n", filenames[i]);
         FILE* input = fopen(filenames[i] ,"r");
-        setvbuf(input, NULL, _IOFBF, 16384);
+        // setvbuf(input, NULL, _IOFBF, 16384);
 
         if(!input){
             printf("process files->err:%d\n",errno);
@@ -165,7 +165,7 @@ void startThreads(int file_count, char **filenames) {
     int *localcounters[TNUM];
     ThreadArgs arglist[file_count];
     pthread_t threads[TNUM];
-    int blocksize = file_count/TNUM;
+    int blocksize = ceil((double)file_count/TNUM);
     int i=0;
     int start = 0;
     for(; i<TNUM; i++){
