@@ -11,8 +11,8 @@
 #include <math.h>
 
 #define COUNTER_SIZE 9323
-#define TNUM 8
-#define BLK_SIZE 65536
+#define TNUM 4
+#define BLK_SIZE 2048
 
 int K;
 int counter[COUNTER_SIZE];
@@ -158,6 +158,7 @@ void processfile(char *filename, int *localcounter) {
     long file_len = get_file_length(filename);
 
     FILE* input = fopen(filename,"r");
+    setvbuf(input, NULL, _IONBF, 0);
 
 	if(!input){
 	    printf("process file->err:%d\n",errno);
@@ -318,8 +319,6 @@ int main(int argc, char **argv)
     char temp[40];
     printf("Top K frequently accessed hour:\n");
     for(int i=0; i<K; i++) {
-        // Can do printing faster
-        // https://stackoverflow.com/questions/5975378/fastest-way-to-print-a-certain-number-of-characters-to-stdout-in-c
         time_string((time_t)start_timestamp+topK[i]*3600, temp);
         printf("%s\t%d\n", temp, counter[topK[i]]);
     }
