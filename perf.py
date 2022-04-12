@@ -5,15 +5,15 @@ import subprocess
 import streamlit as st
 import time
 
-# ./perf.py <number of executions ot average>
+# ./perf.py <number of executions to average>
 NUM = int(sys.argv[1])
 random.seed(2003)
 start_time = 1645491600
 total_times = 0.0
 
 def run(dir, K):
-    t=time.time()
     cmd = ["./test.o", dir, "1645491600", K]
+    t=time.time()
     process = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     elapsed_time = time.time() - t
     return elapsed_time
