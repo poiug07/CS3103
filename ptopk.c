@@ -10,7 +10,7 @@
 #include <time.h>
 
 #define COUNTER_SIZE 9333
-#define BLK_SIZE 2048
+#define BLK_SIZE 4096
 
 int K;
 int counter[COUNTER_SIZE];
@@ -135,10 +135,12 @@ void parse_block(int *localcounter, char* buffer, char* tail,int block_size, cha
 void processfile(char *filename, int *global_counter) {
     // malloc is slow, should init once and use it many times. Size is fixed anyways.
     long file_len = get_file_length(filename);
+    char buffer[BLK_SIZE];
 
-    int *localcounter = (int*)malloc(COUNTER_SIZE*sizeof(int));
-    memset(localcounter,0, COUNTER_SIZE*sizeof(int));
+    // int *localcounter = (int*)malloc(COUNTER_SIZE*sizeof(int));
+    // memset(localcounter,0, COUNTER_SIZE*sizeof(int));
     FILE* input = fopen(filename,"r");
+    setvbuf(input, NULL, _IONBF, 0);
 
 	if(!input){
 	    printf("process file->err:%d\n",errno);
@@ -146,7 +148,6 @@ void processfile(char *filename, int *global_counter) {
 	}
 
     // fseek(input,0,SEEK_SET);
-    char buffer[BLK_SIZE];
 
     char tail[40];
     tail[0] = '\0';
@@ -159,14 +160,14 @@ void processfile(char *filename, int *global_counter) {
     while(readed<file_len){
 		current_read = fread(buffer, 1, BLK_SIZE, input);
 		readed+=current_read;
-		parse_block(localcounter, buffer, tail,current_read, value_string);
+		parse_block(global_counter, buffer, tail,current_read, value_string);
 	}
 
-    for(int i=0; i!=COUNTER_SIZE; ++i) {
-        global_counter[i] += localcounter[i];
-    }
+    // for(int i=0; i!=COUNTER_SIZE; ++i) {
+    //     global_counter[i] += localcounter[i];
+    // }
 
-    free(localcounter);
+    // free(localcounter);
     fclose(input);
 }
 
