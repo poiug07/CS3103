@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -5,8 +6,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pthread.h>
+
 #include <time.h>
-#include <stdio.h>
 #include <math.h>
 
 #define COUNTER_SIZE 9321
@@ -91,17 +92,18 @@ int cmpfunc(const void *a, const void *b)
     // requires global counter value to be set
     int t1 = *(int *)a;
     int t2 = *(int *)b;
+    return COMPARE(counter, t1, t2);
     if (counter[t1] != counter[t2])
-        return counter[t1] < counter[t2];
+        return counter[t2]-counter[t1];
     else
-        return t1 < t2;
+        return t2-t1;
     //    return  -compare_value_and_time(counter, *(int*)a, *(int*)b);
 }
 
 void TopK(int *counter, int *heap)
 {
     // K - global variable denoting size of heap
-    for (int i = 0; i != K; i++)
+    for (int i = 0; i < K; i++)
     {
         heap[i] = i;
     }
@@ -129,7 +131,7 @@ void TopK(int *counter, int *heap)
 void processfile(char *filename, int *counter)
 {
     FILE *input = fopen(filename, "r");
-    setvbuf(stdout, NULL, _IOFBF, 16384);
+    // setvbuf(stdout, NULL, _IOFBF, 16384);
 
     if (!input)
     {
@@ -175,7 +177,7 @@ void *processfiles(void *arg)
     for (int i = args->start; i < end; i++)
     {
         FILE *input = fopen(filenames[i], "r");
-        setvbuf(input, NULL, _IOFBF, 16384);
+        // setvbuf(input, NULL, _IOFBF, 16384);
 
         if (!input)
         {
@@ -209,7 +211,7 @@ void startThreads(int file_count, char **filenames)
     int *localcounters[TNUM];
     ThreadArgs arglist[file_count];
     pthread_t threads[TNUM];
-    int blocksize = ceil((double)file_count / TNUM);
+    int blocksize = (file_count+TNUM-1) / TNUM; // ceil((double)file_count / TNUM);
     int i = 0;
     int start = 0;
     for (; i < TNUM; i++)
