@@ -91,7 +91,7 @@ int cmpfunc(const void *a, const void *b)
     // requires global counter value to be set
     int t1 = *(int *)a;
     int t2 = *(int *)b;
-    return COMPARE(counter, t1, t2);
+    return (counter[t1] != counter[t2]) ? (counter[t2]-counter[t1]) : (t2-t1);
     if (counter[t1] != counter[t2])
         return counter[t2]-counter[t1];
     else
