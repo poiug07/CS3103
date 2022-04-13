@@ -8,7 +8,6 @@
 #include <pthread.h>
 
 #include <time.h>
-#include <math.h>
 
 #define COUNTER_SIZE 9321
 #define TNUM 4
