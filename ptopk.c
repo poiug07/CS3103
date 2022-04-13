@@ -134,11 +134,13 @@ void* processfiles(void* arg) {
         } 
         int buffer_size=40;
         char buffer[buffer_size+1];
-        int line=0;
         while(fgets(buffer,buffer_size,input)!=NULL){
             char* temp;
             long time_stamp = strtol(buffer,&temp,10);
+            // pthread_mutex_lock(&counter_lock);
+            // __sync_add_and_fetch(&counter[(time_stamp-start_timestamp)/3600], 1);
             localcounter[(time_stamp-start_timestamp)/3600]++;
+            // pthread_mutex_unlock(&counter_lock);
         }
         fclose(input);
     }
