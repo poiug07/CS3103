@@ -55,25 +55,25 @@ void swap(int *a, int *b)
     *b = temp;
 }
 
-static void heapify(int *heap, int *counter, int i)
+static void heapify(int *heap, int *counter, int i, int n)
 {
     // K - global variable defining size of heap
-    int largest = i;
+    int smallest = i;
     int l;
     int r;
 heapify_loop:
     l = 2 * i + 1;
     r = 2 * i + 2;
-    if (l < K && COMPARE(counter, heap[l], heap[largest]))
-        largest = l;
-    if (r < K && COMPARE(counter, heap[r], heap[largest]))
-        largest = r;
-    if (largest == i)
+    if (l < n && COMPARE(counter, heap[l], heap[smallest]))
+        smallest = l;
+    if (r < n && COMPARE(counter, heap[r], heap[smallest]))
+        smallest = r;
+    if (smallest == i)
         return;
-    swap(&heap[i], &heap[largest]);
-    i = largest;
+    swap(&heap[i], &heap[smallest]);
+    i = smallest;
     goto heapify_loop;
-    // heapify(heap, counter, largest);
+    // heapify(heap, counter, smallest);
 }
 
 static void buildHeap(int *heap, int *counter)
@@ -82,22 +82,22 @@ static void buildHeap(int *heap, int *counter)
     // K - global variable denoting size of heap
     for (int i = (K / 2) - 1; i >= 0; i--)
     {
-        heapify(heap, counter, i);
+        heapify(heap, counter, i, K);
     }
 }
 
-int cmpfunc(const void *a, const void *b)
-{
-    // requires global counter value to be set
-    int t1 = *(int *)a;
-    int t2 = *(int *)b;
-    return (counter[t1] != counter[t2]) ? (counter[t2]-counter[t1]) : (t2-t1);
-    if (counter[t1] != counter[t2])
-        return counter[t2]-counter[t1];
-    else
-        return t2-t1;
-    //    return  -compare_value_and_time(counter, *(int*)a, *(int*)b);
-}
+// int cmpfunc(const void *a, const void *b)
+// {
+//     // requires global counter value to be set
+//     int t1 = *(int *)a;
+//     int t2 = *(int *)b;
+//     return (counter[t1] != counter[t2]) ? (counter[t2] - counter[t1]) : (t2 - t1);
+//     if (counter[t1] != counter[t2])
+//         return counter[t2] - counter[t1];
+//     else
+//         return t2 - t1;
+//     //    return  -compare_value_and_time(counter, *(int*)a, *(int*)b);
+// }
 
 void TopK(int *counter, int *heap)
 {
@@ -112,14 +112,19 @@ void TopK(int *counter, int *heap)
         if (COMPARE(counter, heap[0], i))
         {
             heap[0] = i;
-            heapify(heap, counter, 0);
+            heapify(heap, counter, 0, K);
         }
     }
 
     // this should put values in descending order
     // I think it is just faster to use qsort,
     // but maybe wrong. TODO: Need to check.
-    qsort(heap, K, sizeof(int), cmpfunc);
+    // qsort(heap, K, sizeof(int), cmpfunc);
+    for (int i = K - 1; i >= 1; i--)
+    {
+        swap(&heap[0], &heap[i]);
+        heapify(heap, counter, 0, i);
+    }
 }
 
 #define PARSE_FIRST_DIGIT \
@@ -210,7 +215,7 @@ void startThreads(int file_count, char **filenames)
     int *localcounters[TNUM];
     ThreadArgs arglist[file_count];
     pthread_t threads[TNUM];
-    int blocksize = (file_count+TNUM-1) / TNUM; // ceil((double)file_count / TNUM);
+    int blocksize = (file_count + TNUM - 1) / TNUM; // ceil((double)file_count / TNUM);
     int i = 0;
     int start = 0;
     for (; i < TNUM; i++)
