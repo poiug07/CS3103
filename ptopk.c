@@ -8,11 +8,12 @@
 #include <pthread.h>
 #include <time.h>
 #include <stdio.h>
-#include <math.h>
 
-#define COUNTER_SIZE 9323
-#define TNUM 2
-#define BLK_SIZE 2048
+#include <fcntl.h>
+
+#define COUNTER_SIZE 9400
+#define TNUM 4
+#define BLK_SIZE 8192
 
 int K;
 int counter[COUNTER_SIZE];
@@ -112,7 +113,9 @@ void parse_block(int *localcounter, char* buffer, char* tail,int block_size, cha
 	int parsed_posi = 0;
 	int val_po=0;
 	long time_stamp;
-	// parse the first entry
+    if(block_size<11){
+        return;
+    }
 	while(tail[val_po]!='\0'){
 		value_string[val_po]=tail[val_po];
 		val_po++;
@@ -154,18 +157,26 @@ void parse_block(int *localcounter, char* buffer, char* tail,int block_size, cha
 }
 
 void processfile(char *filename, int *localcounter) {
-    // malloc is slow, should init once and use it many times. Size is fixed anyways.
     long file_len = get_file_length(filename);
-
-    FILE* input = fopen(filename,"r");
-    setvbuf(input, NULL, _IONBF, 0);
+    int input = open(filename, O_RDONLY);
 
 	if(!input){
 	    printf("process file->err:%d\n",errno);
 	    exit(errno);
 	}
-
-    // fseek(input,0,SEEK_SET);
+    if (input == -1)
+    {
+        printf("process file->err:%d\n", errno);
+        exit(errno);
+    }
+    struct stat sb;
+    if (fstat(input, &sb) == -1)
+    {
+        printf("process file->err:%d\n", errno);
+        exit(errno);
+    }
+    long n_bytes = sb.st_size;
+    posix_fadvise(input, 0, file_len, POSIX_FADV_SEQUENTIAL | POSIX_FADV_NOREUSE);
     char buffer[BLK_SIZE];
 
     char tail[40];
@@ -177,17 +188,15 @@ void processfile(char *filename, int *localcounter) {
     long readed = 0;
 
     while(readed<file_len){
-		current_read = fread(buffer, 1, BLK_SIZE, input);
-		parse_block(localcounter, buffer, tail,current_read, value_string);
+        // printf("%d\n", readed);
+        // fflush(stdout);
+		current_read = read(input, buffer, BLK_SIZE);
+        // printf("%d %c\n", readed, buffer[0]);
+        // fflush(stdout);
+		parse_block(localcounter, buffer, tail, current_read, value_string);
 		readed += current_read;
 	}
-
-    // pthread_mutex_lock(&counter_lock);
-    // for(int i=0; i!=COUNTER_SIZE; ++i) {
-    //     counter[i] += localcounter[i];
-    // }
-    // pthread_mutex_unlock(&counter_lock);
-    // fclose(input);
+    close(input);
 }
 
 void* processfiles(void* arg) {
@@ -196,30 +205,11 @@ void* processfiles(void* arg) {
     int start = args->start;
     int end = args->end;
     char **filenames = args->filenames;
-    for(int i=start; i!=end; ++i){
-        // printf("%s\n", filenames[i]);
-        // FILE* input = fopen(filenames[i] ,"r");
-        // if(!input){
-        //     printf("process files->err:%d\n",errno);
-        //     exit(errno);
-        // } 
-        // int buffer_size=40;
-        // char buffer[buffer_size+1];
-        // int line=0;
-        // while(fgets(buffer,buffer_size,input)!=NULL){
-        //     char* temp;
-        //     long time_stamp = strtol(buffer,&temp,10);
-        //     localcounter[(time_stamp-start_timestamp)/3600]++;
-        // }
-        // fclose(input);
+    // printf("%d %d\n", start, end);
+    // fflush(stdout);
+    for(int i=start; i<end; ++i){
         processfile(filenames[i], localcounter);
     }
-
-    // pthread_mutex_lock(&counter_lock);
-    // for(int idx=0; idx<COUNTER_SIZE; idx++)
-    //     counter[idx] += localcounter[idx];
-    // pthread_mutex_unlock(&counter_lock);
-
     return 0;
 }
 
@@ -227,7 +217,7 @@ void startThreads(int file_count, char **filenames) {
     int *localcounters[TNUM];
     ThreadArgs arglist[file_count];
     pthread_t threads[TNUM];
-    int blocksize = ceil((double)file_count/TNUM);
+    int blocksize = (file_count+TNUM-1)/TNUM;
     int i=0;
     int start = 0;
     for(; i<TNUM; i++){
