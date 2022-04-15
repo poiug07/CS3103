@@ -14,7 +14,6 @@
 
 int K;
 int counter[COUNTER_SIZE];
-// pthread_mutex_t counter_lock;
 long start_timestamp; // minimal timestamp supplied as argv
 
 struct thread_args
@@ -35,16 +34,6 @@ static void time_string(time_t t, char *s)
     struct tm *tm = localtime(&t);
     strftime(s, 25, "%c", tm);
 }
-
-// static int compare_value_and_time(int *values, int t1, int t2)
-// {
-//     // Returns negative if value of values on t1 is smaller than t2
-//     // if values same, returns negative value if t1 smaller than t2
-//     if (values[t1] != values[t2])
-//         return values[t1] - values[t2];
-//     else
-//         return t1 - t2;
-// }
 
 #define COMPARE(v, a, b) ((v[a] != v[b]) ? (v[a] < v[b]) : (a < b))
 
@@ -73,7 +62,6 @@ heapify_loop:
     swap(&heap[i], &heap[smallest]);
     i = smallest;
     goto heapify_loop;
-    // heapify(heap, counter, smallest);
 }
 
 static void buildHeap(int *heap, int *counter)
@@ -85,19 +73,6 @@ static void buildHeap(int *heap, int *counter)
         heapify(heap, counter, i, K);
     }
 }
-
-// int cmpfunc(const void *a, const void *b)
-// {
-//     // requires global counter value to be set
-//     int t1 = *(int *)a;
-//     int t2 = *(int *)b;
-//     return (counter[t1] != counter[t2]) ? (counter[t2] - counter[t1]) : (t2 - t1);
-//     if (counter[t1] != counter[t2])
-//         return counter[t2] - counter[t1];
-//     else
-//         return t2 - t1;
-//     //    return  -compare_value_and_time(counter, *(int*)a, *(int*)b);
-// }
 
 void TopK(int *counter, int *heap)
 {
@@ -116,9 +91,8 @@ void TopK(int *counter, int *heap)
         }
     }
 
-    // this should put values in descending order
-    // I think it is just faster to use qsort,
-    // but maybe wrong. TODO: Need to check.
+    // Need to sort K items in descdending order.
+    // Removed qsort because of compatability, should run at least 0.1 ms faster
     // qsort(heap, K, sizeof(int), cmpfunc);
     for (int i = K - 1; i >= 1; i--)
     {
@@ -132,22 +106,22 @@ void TopK(int *counter, int *heap)
 #define PARSE_NEXT_DIGIT \
     time_stamp = time_stamp * 10 + *at++ - '0';
 
+#define BUFFER_SIZE 40
+
 void processfile(char *filename, int *counter)
 {
     FILE *input = fopen(filename, "r");
-    // setvbuf(stdout, NULL, _IOFBF, 16384);
 
     if (!input)
     {
         printf("process file->err:%d\n", errno);
         exit(errno);
     }
-    int buffer_size = 40;
-    char buffer[buffer_size + 1];
+    char buffer[BUFFER_SIZE + 1];
 
     long time_stamp;
     char *at;
-    while (fgets(buffer, buffer_size, input) != NULL)
+    while (fgets(buffer, BUFFER_SIZE, input) != NULL)
     {
         // loop unrolling
         at = buffer;
@@ -159,8 +133,6 @@ void processfile(char *filename, int *counter)
         PARSE_NEXT_DIGIT
         PARSE_NEXT_DIGIT
         PARSE_NEXT_DIGIT
-        // PARSE_NEXT_DIGIT
-        // PARSE_NEXT_DIGIT
         time_stamp *= 100;
 
         counter[(unsigned)(time_stamp - start_timestamp) / 3600]++;
@@ -170,25 +142,23 @@ void processfile(char *filename, int *counter)
 
 void *processfiles(void *arg)
 {
+    // same procedure as process file but for multithreaded parsing of multiple files
     ThreadArgs *args = (ThreadArgs *)arg;
     int *localcounter = args->counter;
     int end = args->end;
     char **filenames = args->filenames;
-    int buffer_size = 40;
-    char buffer[buffer_size + 1];
+    char buffer[BUFFER_SIZE + 1];
     long time_stamp;
     char *at;
     for (int i = args->start; i < end; i++)
     {
         FILE *input = fopen(filenames[i], "r");
-        // setvbuf(input, NULL, _IOFBF, 16384);
-
         if (!input)
         {
             printf("process files->err:%d\n", errno);
             exit(errno);
         }
-        while (fgets(buffer, buffer_size, input) != NULL)
+        while (fgets(buffer, BUFFER_SIZE, input) != NULL)
         {
             at = buffer;
             PARSE_FIRST_DIGIT
@@ -199,8 +169,6 @@ void *processfiles(void *arg)
             PARSE_NEXT_DIGIT
             PARSE_NEXT_DIGIT
             PARSE_NEXT_DIGIT
-            // PARSE_NEXT_DIGIT
-            // PARSE_NEXT_DIGIT
             time_stamp *= 100;
 
             localcounter[(unsigned)(time_stamp - start_timestamp) / 3600]++;
@@ -212,14 +180,16 @@ void *processfiles(void *arg)
 
 void startThreads(int file_count, char **filenames)
 {
+    // procedure to distribute files to threads, start them and finalize result
     int *localcounters[TNUM];
     ThreadArgs arglist[file_count];
     pthread_t threads[TNUM];
-    int blocksize = (file_count + TNUM - 1) / TNUM; // ceil((double)file_count / TNUM);
-    int i = 0;
+    int blocksize = (file_count + TNUM - 1) / TNUM; // ceil(file_count / TNUM);
     int start = 0;
+    int i = 0;
     for (; i < TNUM; i++)
     {
+        // calloc sets all bytes to 0
         localcounters[i] = (int *)calloc(COUNTER_SIZE, sizeof(int));
         arglist[i].filenames = filenames;
         arglist[i].start = start;
@@ -251,8 +221,8 @@ int main(int argc, char **argv)
     strcpy(dirname, argv[1]);
     start_timestamp = atol(argv[2]);
     K = atoi(argv[3]);
-    // printf("%s %ld %d\n", dir, minstamp, K);
 
+    // set counter to all 0 to avoid unpredictable behavior
     memset(counter, 0, COUNTER_SIZE);
 
     DIR *d;
@@ -268,28 +238,27 @@ int main(int argc, char **argv)
     }
     closedir(d);
 
-    // Combine these two loops
-    char **filenames = (char **)malloc(file_count * sizeof(char *));
-    for (int i = 0; i < file_count; i++)
-    {
-        filenames[i] = (char *)malloc(60 * (sizeof(char *)));
-        filenames[i][0] = '\0';
-    }
+    // Assume maximum path len is 59 characters
+    // Dynamically allocate to match the number of files in directory
+    char **filenames = (char **)malloc(file_count * sizeof(filenames));
     int i = 0;
     d = opendir(dirname);
     while ((dir = readdir(d)) != NULL)
     {
         if (dir->d_name[0] == '.')
             continue;
-        // printf("%s\n", dir->d_name);
+        filenames[i] = (char *)malloc(60 * (sizeof(char *)));
+        filenames[i][0] = '\0';    
         strcat(filenames[i], dirname);
         strcat(filenames[i], dir->d_name);
         i++;
     }
     closedir(d);
 
-    if (file_count < 16)
+    if (file_count < 4)
     {
+        // If file count < 4 it is faster to process files sequentially(assuming they are quite small).
+        // also helps to avoid unexpected behavior.
         for (int i = 0; i < file_count; i++)
             processfile(filenames[i], counter);
     }
@@ -307,11 +276,8 @@ int main(int argc, char **argv)
     printf("Top K frequently accessed hour:\n");
     for (int i = 0; i < K; i++)
     {
-        // Can do printing faster
-        // https://stackoverflow.com/questions/5975378/fastest-way-to-print-a-certain-number-of-characters-to-stdout-in-c
         time_string(start_timestamp + topK[i] * 3600, temp);
         printf("%s\t%d\n", temp, counter[topK[i]]);
     }
-
     return 0;
 }
