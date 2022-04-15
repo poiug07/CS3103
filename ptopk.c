@@ -278,7 +278,7 @@ int main(int argc, char **argv)
     if (file_count < 4)
     {
         // If file count < 4 it is faster to process files sequentially(assuming they are quite small).
-        // We assume 1 or many files if 3 large files then this is not effective.
+        // We assume either 1 or many files. If 3 large files then this is not effective.
         for (int i = 0; i < file_count; i++)
             processfile(filenames[i], counter);
     }
