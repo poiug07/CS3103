@@ -77,11 +77,13 @@ static void buildHeap(int *heap, int *counter)
 void TopK(int *counter, int *heap)
 {
     // K - global variable denoting size of heap
+    // First build heap from first K elements
     for (int i = 0; i < K; i++)
     {
         heap[i] = i;
     }
     buildHeap(heap, counter);
+    // Now add and check elements one-by-one
     for (int i = K; i != COUNTER_SIZE; i++)
     {
         if (COMPARE(counter, heap[0], i))
