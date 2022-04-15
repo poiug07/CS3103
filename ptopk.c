@@ -111,14 +111,12 @@ void TopK(int *counter, int *heap)
 void processfile(char *filename, int *counter)
 {
     FILE *input = fopen(filename, "r");
-
     if (!input)
     {
         printf("process file->err:%d\n", errno);
         exit(errno);
     }
     char buffer[BUFFER_SIZE + 1];
-
     long time_stamp;
     char *at;
     while (fgets(buffer, BUFFER_SIZE, input) != NULL)
@@ -135,7 +133,7 @@ void processfile(char *filename, int *counter)
         PARSE_NEXT_DIGIT
         time_stamp *= 100;
 
-        counter[(unsigned)(time_stamp - start_timestamp) / 3600]++;
+        ++counter[(unsigned)(time_stamp - start_timestamp) / 3600];
     }
     fclose(input);
 }
@@ -171,7 +169,7 @@ void *processfiles(void *arg)
             PARSE_NEXT_DIGIT
             time_stamp *= 100;
 
-            localcounter[(unsigned)(time_stamp - start_timestamp) / 3600]++;
+            ++localcounter[(unsigned)(time_stamp - start_timestamp) / 3600];
         }
         fclose(input);
     }
@@ -182,7 +180,7 @@ void startThreads(int file_count, char **filenames)
 {
     // procedure to distribute files to threads, start them and finalize result
     int *localcounters[TNUM];
-    ThreadArgs arglist[file_count];
+    ThreadArgs arglist[TNUM];
     pthread_t threads[TNUM];
     int blocksize = (file_count + TNUM - 1) / TNUM; // ceil(file_count / TNUM);
     int start = 0;
@@ -197,7 +195,7 @@ void startThreads(int file_count, char **filenames)
         arglist[i].end = start;
         arglist[i].counter = localcounters[i];
     }
-    arglist[TNUM - 1].end = file_count;
+    arglist[i-1].end = file_count;
 
     // DO NOT merge 2 loops for creating and wait. It is slower for some reason.
     for (i = 0; i < TNUM; i++)
@@ -208,6 +206,7 @@ void startThreads(int file_count, char **filenames)
     {
         pthread_join(threads[i], NULL);
     }
+    // loop unrolling doesn't help here
     for (i = 0; i < TNUM; i++)
     {
         for (int idx = 0; idx < COUNTER_SIZE; idx++)
@@ -258,7 +257,7 @@ int main(int argc, char **argv)
     if (file_count < 4)
     {
         // If file count < 4 it is faster to process files sequentially(assuming they are quite small).
-        // also helps to avoid unexpected behavior.
+        // We assume 1 or many files if 3 large files this is not effective.
         for (int i = 0; i < file_count; i++)
             processfile(filenames[i], counter);
     }
