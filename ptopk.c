@@ -1,3 +1,9 @@
+/****************
+Code by group 2:
+KOZHIN Assan
+SALTER Glenn
+TOROMANOVIC Jovan
+****************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +19,7 @@
 #define TNUM 4
 
 int K;
-int counter[COUNTER_SIZE];
+int counter[COUNTER_SIZE]; // global counter array
 long start_timestamp; // minimal timestamp supplied as argv
 
 struct thread_args
@@ -26,6 +32,7 @@ struct thread_args
 
 typedef struct thread_args ThreadArgs;
 
+// Convert timestamp to a required format and store it s
 static void time_string(time_t t, char *s)
 {
     // sample testcase
@@ -44,7 +51,8 @@ void swap(int *a, int *b)
     *b = temp;
 }
 
-static void heapify(int *heap, int *counter, int i, int n)
+// Sink item i in the min-heap
+static void heapify(int *heap, int *counter, int i, const int n)
 {
     // K - global variable defining size of heap
     int smallest = i;
@@ -64,6 +72,7 @@ heapify_loop:
     goto heapify_loop;
 }
 
+// Build up initial heap of K elements
 static void buildHeap(int *heap, int *counter)
 {
     // Calling Heapify for all non leaf nodes
@@ -74,6 +83,7 @@ static void buildHeap(int *heap, int *counter)
     }
 }
 
+// TopK procedure places indices(pseudotimestamps) in heap in descending order
 void TopK(int *counter, int *heap)
 {
     // K - global variable denoting size of heap
@@ -110,6 +120,7 @@ void TopK(int *counter, int *heap)
 
 #define BUFFER_SIZE 40
 
+// Reading, parsing and incrementing count in counter for a single file
 void processfile(char *filename, int *counter)
 {
     FILE *input = fopen(filename, "r");
@@ -140,9 +151,10 @@ void processfile(char *filename, int *counter)
     fclose(input);
 }
 
+/*Multithreaded version of processfile,
+processes number of files instead of sinlge file*/
 void *processfiles(void *arg)
 {
-    // same procedure as process file but for multithreaded parsing of multiple files
     ThreadArgs *args = (ThreadArgs *)arg;
     int *localcounter = args->counter;
     int end = args->end;
@@ -178,9 +190,9 @@ void *processfiles(void *arg)
     return 0;
 }
 
+/*procedure to distribute files to threads, start them and finalize result*/
 void startThreads(int file_count, char **filenames)
 {
-    // procedure to distribute files to threads, start them and finalize result
     int *localcounters[TNUM];
     ThreadArgs arglist[TNUM];
     pthread_t threads[TNUM];
@@ -197,7 +209,7 @@ void startThreads(int file_count, char **filenames)
         arglist[i].end = start;
         arglist[i].counter = localcounters[i];
     }
-    arglist[i-1].end = file_count;
+    arglist[i - 1].end = file_count;
 
     // DO NOT merge 2 loops for creating and wait. It is slower for some reason.
     for (i = 0; i < TNUM; i++)
@@ -249,7 +261,7 @@ int main(int argc, char **argv)
         if (dir->d_name[0] == '.')
             continue;
         filenames[i] = (char *)malloc(60 * (sizeof(char *)));
-        filenames[i][0] = '\0';    
+        filenames[i][0] = '\0';
         strcat(filenames[i], dirname);
         strcat(filenames[i], dir->d_name);
         i++;
