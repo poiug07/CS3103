@@ -44,13 +44,6 @@ static void time_string(time_t t, char *s)
 
 #define COMPARE(v, a, b) ((v[a] != v[b]) ? (v[a] < v[b]) : (a < b))
 
-void swap(int *a, int *b)
-{
-    int temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
 // Sink item i in the min-heap
 static void heapify(int *heap, int *counter, int i, const int n)
 {
@@ -58,6 +51,7 @@ static void heapify(int *heap, int *counter, int i, const int n)
     int smallest = i;
     int l;
     int r;
+    int temp;
 heapify_loop:
     l = 2 * i + 1;
     r = 2 * i + 2;
@@ -67,7 +61,10 @@ heapify_loop:
         smallest = r;
     if (smallest == i)
         return;
-    swap(&heap[i], &heap[smallest]);
+    temp = heap[i];
+    heap[i] = heap[smallest];
+    heap[smallest] = temp;
+    // swap(&heap[i], &heap[smallest]);
     i = smallest;
     goto heapify_loop;
 }
@@ -98,6 +95,7 @@ void TopK(int *counter, int *heap)
     {
         if (COMPARE(counter, heap[0], i))
         {
+            // insert into heap only if larger than smallest element
             heap[0] = i;
             heapify(heap, counter, 0, K);
         }
@@ -106,9 +104,12 @@ void TopK(int *counter, int *heap)
     // Need to sort K items in descdending order.
     // Removed qsort because of compatability, should run at least 0.1 ms faster
     // qsort(heap, K, sizeof(int), cmpfunc);
+    int temp;
     for (int i = K - 1; i >= 1; i--)
     {
-        swap(&heap[0], &heap[i]);
+        temp = heap[0];
+        heap[0] = heap[i];
+        heap[i] = temp;
         heapify(heap, counter, 0, i);
     }
 }
@@ -134,8 +135,8 @@ void processfile(char *filename, int *counter)
     char *at;
     while (fgets(buffer, BUFFER_SIZE, input) != NULL)
     {
-        // loop unrolling
         at = buffer;
+        // loop unrolling
         PARSE_FIRST_DIGIT
         PARSE_NEXT_DIGIT
         PARSE_NEXT_DIGIT
@@ -173,6 +174,7 @@ void *processfiles(void *arg)
         while (fgets(buffer, BUFFER_SIZE, input) != NULL)
         {
             at = buffer;
+            // loop unrolling
             PARSE_FIRST_DIGIT
             PARSE_NEXT_DIGIT
             PARSE_NEXT_DIGIT
@@ -184,6 +186,7 @@ void *processfiles(void *arg)
             time_stamp *= 100;
 
             ++localcounter[(unsigned)(time_stamp - start_timestamp) / 3600];
+            // Can ignore string part of the line since it is not used
         }
         fclose(input);
     }
@@ -245,19 +248,23 @@ int main(int argc, char **argv)
     int file_count = 0;
     while ((dir = readdir(d)) != NULL)
     {
+        // skip . and ..
         if (dir->d_name[0] == '.')
             continue;
         file_count++;
     }
     closedir(d);
 
-    // Assume maximum path len is 59 characters
-    // Dynamically allocate to match the number of files in directory
+    // Assume maximum path len is 59 characters.
+    // Dynamically allocate to match the number of files in directory.
+    // Filenames are actually paths to the files, but it is easier to
+    // name them as filenames
     char **filenames = (char **)malloc(file_count * sizeof(filenames));
     int i = 0;
     d = opendir(dirname);
     while ((dir = readdir(d)) != NULL)
     {
+        // skip . and ..
         if (dir->d_name[0] == '.')
             continue;
         filenames[i] = (char *)malloc(60 * (sizeof(char *)));
@@ -271,7 +278,7 @@ int main(int argc, char **argv)
     if (file_count < 4)
     {
         // If file count < 4 it is faster to process files sequentially(assuming they are quite small).
-        // We assume 1 or many files if 3 large files this is not effective.
+        // We assume 1 or many files if 3 large files then this is not effective.
         for (int i = 0; i < file_count; i++)
             processfile(filenames[i], counter);
     }
